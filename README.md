@@ -1,4 +1,4 @@
-# Local Ethereum Gas Calculator
+# Local Ethereum Gas Calculator based on Etherscan API
 
 <div align="center">
   <img src="image.png" alt="Gas Calculator" width="400">
@@ -8,14 +8,6 @@
 - Store as bookmark for simple use.
 - Supply etherscan API key once, stored locally too!
 
-## Features
-
-- Calculate gas costs in ETH and USD
-- Three gas price tiers: Low, Average, Fast
-- Flexible input formats: `21000`, `21,000`, or `21k`
-- Real-time prices from Etherscan API
-- Works locally in your browser
-
 ## Usage
 
 1. Open `gas_cost.html` in your browser
@@ -23,15 +15,8 @@
 3. Enter the gas amount for your transaction
 4. Click Calculate
 
-## Common Gas Amounts
-
-- Simple ETH transfer: `21000`
-- ERC-20 token transfer: `65000`
-- Uniswap swap: `150000`
-- NFT mint: `100000` - `300000`
-
 ## Requirements
 
-- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Browser
 - Etherscan API key (free)
 - Internet connection for API calls
