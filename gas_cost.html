@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ethereum Gas Calculator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⛽</text></svg>">
     <style>
         * {
             margin: 0;
@@ -196,12 +197,17 @@
             display: none;
         }
 
-        .button-secondary {
-            background: #6c757d;
+        .api-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 8px;
         }
 
-        .button-secondary:hover {
-            background: #5a6268;
+        .api-link:hover {
+            text-decoration: underline;
         }
 
         @media (max-width: 640px) {
@@ -224,12 +230,12 @@
         <div class="card">
             <h1>⛽ Ethereum Gas Calculator</h1>
             <p class="subtitle">Calculate transaction costs in real-time</p>
+            <a class="api-link hidden" id="changeApiLink" onclick="showApiConfig()">change api key</a>
         </div>
 
-        <div class="card">
+        <div class="card" id="apiConfigCard">
             <h2>API Configuration</h2>
-            <div class="api-key-status" id="apiKeyStatus"></div>
-            <div class="input-group" id="apiKeyInputGroup">
+            <div class="input-group">
                 <label for="apiKey">Etherscan API Key</label>
                 <input
                     type="text"
@@ -238,7 +244,7 @@
                     autocomplete="off"
                 >
             </div>
-            <button id="apiKeyButton" onclick="toggleApiKey()">Save API Key</button>
+            <button onclick="saveApiKey()">Save API Key</button>
             <div class="status" id="apiKeyMessage"></div>
         </div>
 
@@ -258,6 +264,7 @@
 
             <div class="results" id="results">
                 <h2 style="margin-top: 24px;">Results</h2>
+                <div id="priceDisplay" style="margin-bottom: 16px; font-size: 16px; color: #333;"></div>
                 <div class="result-item safe" id="safeResult"></div>
                 <div class="result-item proposed" id="proposedResult"></div>
                 <div class="result-item fast" id="fastResult"></div>
@@ -285,21 +292,13 @@
             }
         }
 
-        // Toggle API key input visibility
-        function toggleApiKey() {
-            const savedKey = localStorage.getItem(API_KEY_STORAGE);
-            const inputGroup = document.getElementById('apiKeyInputGroup');
-            const button = document.getElementById('apiKeyButton');
+        // Show API configuration card
+        function showApiConfig() {
+            const apiConfigCard = document.getElementById('apiConfigCard');
+            const changeApiLink = document.getElementById('changeApiLink');
 
-            if (savedKey && inputGroup.classList.contains('hidden')) {
-                // Show input to edit
-                inputGroup.classList.remove('hidden');
-                button.textContent = 'Save API Key';
-                button.className = '';
-            } else {
-                // Save the key
-                saveApiKey();
-            }
+            apiConfigCard.classList.remove('hidden');
+            changeApiLink.classList.add('hidden');
         }
 
         // Save API key to localStorage
@@ -318,27 +317,21 @@
 
             setTimeout(() => {
                 messageEl.className = 'status';
-            }, 3000);
+                updateApiKeyUI(true);
+            }, 2000);
         }
 
         // Update API key UI
         function updateApiKeyUI(saved) {
-            const statusEl = document.getElementById('apiKeyStatus');
-            const inputGroup = document.getElementById('apiKeyInputGroup');
-            const button = document.getElementById('apiKeyButton');
+            const apiConfigCard = document.getElementById('apiConfigCard');
+            const changeApiLink = document.getElementById('changeApiLink');
 
             if (saved) {
-                statusEl.textContent = '✓ API key is configured';
-                statusEl.className = 'api-key-status saved';
-                inputGroup.classList.add('hidden');
-                button.textContent = 'Change API Key';
-                button.className = 'button-secondary';
+                apiConfigCard.classList.add('hidden');
+                changeApiLink.classList.remove('hidden');
             } else {
-                statusEl.textContent = 'No API key configured';
-                statusEl.className = 'api-key-status';
-                inputGroup.classList.remove('hidden');
-                button.textContent = 'Save API Key';
-                button.className = '';
+                apiConfigCard.classList.remove('hidden');
+                changeApiLink.classList.add('hidden');
             }
         }
 
@@ -391,27 +384,40 @@
             }
 
             // Show loading
-            showMessage(messageEl, 'Fetching current gas prices...', 'loading');
+            showMessage(messageEl, 'Fetching current gas prices and ETH price...', 'loading');
 
             try {
-                // Fetch gas prices from Etherscan
-                const url = `${API_URL}?chainid=1&module=gastracker&action=gasoracle&apikey=${apiKey}`;
-                const response = await fetch(url);
-                const data = await response.json();
+                // Fetch gas prices and ETH price in parallel
+                const gasUrl = `${API_URL}?chainid=1&module=gastracker&action=gasoracle&apikey=${apiKey}`;
+                const ethPriceUrl = `${API_URL}?chainid=1&module=stats&action=ethprice&apikey=${apiKey}`;
 
-                if (data.status !== '1' || !data.result) {
-                    throw new Error(data.message || 'Failed to fetch gas prices');
+                const [gasResponse, ethPriceResponse] = await Promise.all([
+                    fetch(gasUrl),
+                    fetch(ethPriceUrl)
+                ]);
+
+                const gasData = await gasResponse.json();
+                const ethPriceData = await ethPriceResponse.json();
+
+                if (gasData.status !== '1' || !gasData.result) {
+                    throw new Error(gasData.message || 'Failed to fetch gas prices');
+                }
+
+                if (ethPriceData.status !== '1' || !ethPriceData.result) {
+                    throw new Error(ethPriceData.message || 'Failed to fetch ETH price');
                 }
 
                 // Calculate costs for each tier
                 const gasPrices = {
-                    safe: parseFloat(data.result.SafeGasPrice),
-                    proposed: parseFloat(data.result.ProposeGasPrice),
-                    fast: parseFloat(data.result.FastGasPrice)
+                    safe: parseFloat(gasData.result.SafeGasPrice),
+                    proposed: parseFloat(gasData.result.ProposeGasPrice),
+                    fast: parseFloat(gasData.result.FastGasPrice)
                 };
 
+                const ethPriceUSD = parseFloat(ethPriceData.result.ethusd);
+
                 // Display results
-                displayResults(gasAmount, gasPrices);
+                displayResults(gasAmount, gasPrices, ethPriceUSD);
 
                 // Hide message and show results
                 messageEl.className = 'status';
@@ -424,21 +430,27 @@
         }
 
         // Display calculation results
-        function displayResults(gasAmount, gasPrices) {
+        function displayResults(gasAmount, gasPrices, ethPriceUSD) {
+            // Calculate average cost
+            const avgCostInEth = (gasAmount * gasPrices.proposed) / 1_000_000_000;
+            const avgCostInUSD = avgCostInEth * ethPriceUSD;
+
+            // Display price summary
+            const priceDisplay = document.getElementById('priceDisplay');
+            priceDisplay.innerHTML = `$${avgCostInUSD.toFixed(2)} ($${avgCostInUSD})<br>${avgCostInEth.toFixed(6)} ETH`;
+
+            // Display tier boxes
             const tiers = [
-                { id: 'safeResult', name: 'Safe (Low)', price: gasPrices.safe },
-                { id: 'proposedResult', name: 'Proposed (Average)', price: gasPrices.proposed },
-                { id: 'fastResult', name: 'Fast (High)', price: gasPrices.fast }
+                { id: 'safeResult', name: 'Low', price: gasPrices.safe },
+                { id: 'proposedResult', name: 'Average', price: gasPrices.proposed },
+                { id: 'fastResult', name: 'Fast', price: gasPrices.fast }
             ];
 
             tiers.forEach(tier => {
-                const costInEth = (gasAmount * tier.price) / 1_000_000_000;
                 const resultEl = document.getElementById(tier.id);
-
                 resultEl.innerHTML = `
                     <h3>${tier.name}</h3>
                     <div class="gas-price">${tier.price} Gwei</div>
-                    <div class="cost">${costInEth.toFixed(6)} ETH</div>
                 `;
             });
         }
@@ -452,7 +464,7 @@
         // Allow Enter key to trigger actions
         document.getElementById('apiKey').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                toggleApiKey();
+                saveApiKey();
             }
         });
 
