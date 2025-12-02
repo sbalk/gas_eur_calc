@@ -275,6 +275,7 @@
     <script>
         const API_KEY_STORAGE = 'etherscan_api_key';
         const API_URL = 'https://api.etherscan.io/v2/api';
+        let apiKeyMemory = null; // Fallback for when localStorage doesn't work
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -283,7 +284,14 @@
 
         // Load saved API key from localStorage
         function loadApiKey() {
-            const savedKey = localStorage.getItem(API_KEY_STORAGE);
+            let savedKey = null;
+            try {
+                savedKey = localStorage.getItem(API_KEY_STORAGE);
+            } catch (e) {
+                // localStorage not available, use memory fallback
+                savedKey = apiKeyMemory;
+            }
+
             if (savedKey) {
                 document.getElementById('apiKey').value = savedKey;
                 updateApiKeyUI(true);
@@ -311,9 +319,16 @@
                 return;
             }
 
-            localStorage.setItem(API_KEY_STORAGE, apiKey);
+            // Try localStorage first, fall back to memory
+            try {
+                localStorage.setItem(API_KEY_STORAGE, apiKey);
+                showMessage(messageEl, 'API key saved successfully!', 'success');
+            } catch (e) {
+                apiKeyMemory = apiKey;
+                showMessage(messageEl, 'API key saved for this session!', 'success');
+            }
+
             updateApiKeyUI(true);
-            showMessage(messageEl, 'API key saved successfully!', 'success');
 
             setTimeout(() => {
                 messageEl.className = 'status';
@@ -368,7 +383,13 @@
             resultsEl.classList.remove('show');
 
             // Check for API key
-            const apiKey = localStorage.getItem(API_KEY_STORAGE);
+            let apiKey = null;
+            try {
+                apiKey = localStorage.getItem(API_KEY_STORAGE);
+            } catch (e) {
+                apiKey = apiKeyMemory;
+            }
+
             if (!apiKey) {
                 showMessage(messageEl, 'Please configure your API key first', 'error');
                 return;
