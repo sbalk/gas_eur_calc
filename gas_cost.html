@@ -210,6 +210,92 @@
             text-decoration: underline;
         }
 
+        .info-icon {
+            color: #667eea;
+            cursor: pointer;
+            font-size: 18px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .info-icon:hover {
+            color: #5568d3;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: auto;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .modal-body ol {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+
+        .modal-body li {
+            margin-bottom: 12px;
+        }
+
+        .modal-body code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
         @media (max-width: 640px) {
             body {
                 padding: 10px;
@@ -263,11 +349,39 @@
             <div class="status" id="calculateMessage"></div>
 
             <div class="results" id="results">
-                <h2 style="margin-top: 24px;">Results</h2>
+                <h2 style="margin-top: 24px;">
+                    Results
+                    <span class="info-icon" onclick="showExplanation()" title="How is this calculated?">ℹ️</span>
+                </h2>
                 <div id="priceDisplay" style="margin-bottom: 16px; font-size: 16px; color: #333;"></div>
                 <div class="result-item safe" id="safeResult"></div>
                 <div class="result-item proposed" id="proposedResult"></div>
                 <div class="result-item fast" id="fastResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="explanationModal" onclick="closeExplanation(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>How Gas Cost is Calculated</h3>
+                <button class="close-btn" onclick="closeExplanation()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>The gas cost calculation follows these steps:</p>
+                <ol>
+                    <li><strong>Gas Amount:</strong> The number of gas units your transaction requires (e.g., <code>21000</code> for a basic transfer)</li>
+                    <li><strong>Gas Price:</strong> Current network price in Gwei (e.g., <code>32 Gwei</code>)</li>
+                    <li><strong>Convert to ETH:</strong><br>
+                        <code>(Gas × Gwei) ÷ 1,000,000,000 = ETH</code><br>
+                        Example: <code>(21000 × 32) ÷ 1,000,000,000 = 0.000672 ETH</code>
+                    </li>
+                    <li><strong>Convert to USD:</strong><br>
+                        <code>ETH × ETH Price = USD</code><br>
+                        Example: <code>0.000672 × $3,300 = $2.22</code>
+                    </li>
+                </ol>
+                <p><strong>Note:</strong> The displayed cost uses the "Average" gas price tier.</p>
             </div>
         </div>
     </div>
@@ -480,6 +594,18 @@
         function showMessage(element, message, type) {
             element.textContent = message;
             element.className = `status ${type}`;
+        }
+
+        // Show explanation modal
+        function showExplanation() {
+            document.getElementById('explanationModal').classList.add('show');
+        }
+
+        // Close explanation modal
+        function closeExplanation(event) {
+            if (!event || event.target.classList.contains('modal') || event.target.classList.contains('close-btn')) {
+                document.getElementById('explanationModal').classList.remove('show');
+            }
         }
 
         // Allow Enter key to trigger actions
