@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethereum Gas Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+
+        h2 {
+            color: #555;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            display: none;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .status.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.loading {
+            display: block;
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-item.safe {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .result-item.proposed {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .result-item.fast {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .result-item h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .result-item .gas-price {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .result-item .cost {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .api-key-status {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .api-key-status.saved {
+            color: #28a745;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .button-secondary {
+            background: #6c757d;
+        }
+
+        .button-secondary:hover {
+            background: #5a6268;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>⛽ Ethereum Gas Calculator</h1>
+            <p class="subtitle">Calculate transaction costs in real-time</p>
+        </div>
+
+        <div class="card">
+            <h2>API Configuration</h2>
+            <div class="api-key-status" id="apiKeyStatus"></div>
+            <div class="input-group" id="apiKeyInputGroup">
+                <label for="apiKey">Etherscan API Key</label>
+                <input
+                    type="text"
+                    id="apiKey"
+                    placeholder="Enter your Etherscan API key"
+                    autocomplete="off"
+                >
+            </div>
+            <button id="apiKeyButton" onclick="toggleApiKey()">Save API Key</button>
+            <div class="status" id="apiKeyMessage"></div>
+        </div>
+
+        <div class="card">
+            <h2>Calculate Gas Cost</h2>
+            <div class="input-group">
+                <label for="gasAmount">Gas Amount</label>
+                <input
+                    type="text"
+                    id="gasAmount"
+                    placeholder="e.g., 21000, 21,000, or 21k"
+                    autocomplete="off"
+                >
+            </div>
+            <button onclick="calculateGas()">Calculate</button>
+            <div class="status" id="calculateMessage"></div>
+
+            <div class="results" id="results">
+                <h2 style="margin-top: 24px;">Results</h2>
+                <div class="result-item safe" id="safeResult"></div>
+                <div class="result-item proposed" id="proposedResult"></div>
+                <div class="result-item fast" id="fastResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY_STORAGE = 'etherscan_api_key';
+        const API_URL = 'https://api.etherscan.io/v2/api';
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadApiKey();
+        });
+
+        // Load saved API key from localStorage
+        function loadApiKey() {
+            const savedKey = localStorage.getItem(API_KEY_STORAGE);
+            if (savedKey) {
+                document.getElementById('apiKey').value = savedKey;
+                updateApiKeyUI(true);
+            } else {
+                updateApiKeyUI(false);
+            }
+        }
+
+        // Toggle API key input visibility
+        function toggleApiKey() {
+            const savedKey = localStorage.getItem(API_KEY_STORAGE);
+            const inputGroup = document.getElementById('apiKeyInputGroup');
+            const button = document.getElementById('apiKeyButton');
+
+            if (savedKey && inputGroup.classList.contains('hidden')) {
+                // Show input to edit
+                inputGroup.classList.remove('hidden');
+                button.textContent = 'Save API Key';
+                button.className = '';
+            } else {
+                // Save the key
+                saveApiKey();
+            }
+        }
+
+        // Save API key to localStorage
+        function saveApiKey() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const messageEl = document.getElementById('apiKeyMessage');
+
+            if (!apiKey) {
+                showMessage(messageEl, 'Please enter an API key', 'error');
+                return;
+            }
+
+            localStorage.setItem(API_KEY_STORAGE, apiKey);
+            updateApiKeyUI(true);
+            showMessage(messageEl, 'API key saved successfully!', 'success');
+
+            setTimeout(() => {
+                messageEl.className = 'status';
+            }, 3000);
+        }
+
+        // Update API key UI
+        function updateApiKeyUI(saved) {
+            const statusEl = document.getElementById('apiKeyStatus');
+            const inputGroup = document.getElementById('apiKeyInputGroup');
+            const button = document.getElementById('apiKeyButton');
+
+            if (saved) {
+                statusEl.textContent = '✓ API key is configured';
+                statusEl.className = 'api-key-status saved';
+                inputGroup.classList.add('hidden');
+                button.textContent = 'Change API Key';
+                button.className = 'button-secondary';
+            } else {
+                statusEl.textContent = 'No API key configured';
+                statusEl.className = 'api-key-status';
+                inputGroup.classList.remove('hidden');
+                button.textContent = 'Save API Key';
+                button.className = '';
+            }
+        }
+
+        // Parse gas amount with flexible input
+        function parseGasAmount(input) {
+            if (!input) return null;
+
+            // Remove commas
+            let cleaned = input.replace(/,/g, '');
+
+            // Handle "k" or "K" notation
+            if (cleaned.toLowerCase().endsWith('k')) {
+                const number = parseFloat(cleaned.slice(0, -1));
+                if (isNaN(number)) return null;
+                cleaned = (number * 1000).toString();
+            }
+
+            const amount = parseFloat(cleaned);
+
+            // Validate
+            if (isNaN(amount) || amount <= 0) {
+                return null;
+            }
+
+            return amount;
+        }
+
+        // Calculate gas costs
+        async function calculateGas() {
+            const messageEl = document.getElementById('calculateMessage');
+            const resultsEl = document.getElementById('results');
+
+            // Hide previous results
+            resultsEl.classList.remove('show');
+
+            // Check for API key
+            const apiKey = localStorage.getItem(API_KEY_STORAGE);
+            if (!apiKey) {
+                showMessage(messageEl, 'Please configure your API key first', 'error');
+                return;
+            }
+
+            // Parse gas amount
+            const gasInput = document.getElementById('gasAmount').value.trim();
+            const gasAmount = parseGasAmount(gasInput);
+
+            if (gasAmount === null) {
+                showMessage(messageEl, 'Invalid gas amount. Use formats like: 21000, 21,000, or 21k', 'error');
+                return;
+            }
+
+            // Show loading
+            showMessage(messageEl, 'Fetching current gas prices...', 'loading');
+
+            try {
+                // Fetch gas prices from Etherscan
+                const url = `${API_URL}?chainid=1&module=gastracker&action=gasoracle&apikey=${apiKey}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.status !== '1' || !data.result) {
+                    throw new Error(data.message || 'Failed to fetch gas prices');
+                }
+
+                // Calculate costs for each tier
+                const gasPrices = {
+                    safe: parseFloat(data.result.SafeGasPrice),
+                    proposed: parseFloat(data.result.ProposeGasPrice),
+                    fast: parseFloat(data.result.FastGasPrice)
+                };
+
+                // Display results
+                displayResults(gasAmount, gasPrices);
+
+                // Hide message and show results
+                messageEl.className = 'status';
+                resultsEl.classList.add('show');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage(messageEl, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Display calculation results
+        function displayResults(gasAmount, gasPrices) {
+            const tiers = [
+                { id: 'safeResult', name: 'Safe (Low)', price: gasPrices.safe },
+                { id: 'proposedResult', name: 'Proposed (Average)', price: gasPrices.proposed },
+                { id: 'fastResult', name: 'Fast (High)', price: gasPrices.fast }
+            ];
+
+            tiers.forEach(tier => {
+                const costInEth = (gasAmount * tier.price) / 1_000_000_000;
+                const resultEl = document.getElementById(tier.id);
+
+                resultEl.innerHTML = `
+                    <h3>${tier.name}</h3>
+                    <div class="gas-price">${tier.price} Gwei</div>
+                    <div class="cost">${costInEth.toFixed(6)} ETH</div>
+                `;
+            });
+        }
+
+        // Show status message
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        // Allow Enter key to trigger actions
+        document.getElementById('apiKey').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                toggleApiKey();
+            }
+        });
+
+        document.getElementById('gasAmount').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                calculateGas();
+            }
+        });
+    </script>
+</body>
+</html>
