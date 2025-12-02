@@ -1,7 +1,7 @@
 # Local Ethereum Gas Calculator
 
 <div align="center">
-  ⛽
+  <img src="image.png" alt="Gas Calculator" width="400">
 </div>
 
 - A simple, local, single-file HTML calculator for estimating Ethereum transaction costs in real-time.
