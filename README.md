@@ -1,10 +1,12 @@
-# Ethereum Gas Calculator
+# Local Ethereum Gas Calculator
 
 <div align="center">
   ⛽
 </div>
 
-A simple, single-file HTML calculator for estimating Ethereum transaction costs in real-time.
+- A simple, local, single-file HTML calculator for estimating Ethereum transaction costs in real-time.
+- Store as bookmark for simple use.
+- Supply etherscan API key once, stored locally too!
 
 ## Features
 
