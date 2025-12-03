@@ -55,7 +55,21 @@
       .subtitle {
         color: #666;
         font-size: 14px;
-        margin-bottom: 20px;
+        margin-bottom: 8px;
+      }
+
+      .flow-diagram {
+        color: #667eea;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .flow-note {
+        color: #999;
+        font-size: 12px;
+        font-style: italic;
+        margin-bottom: 16px;
       }
 
       .input-group {
@@ -217,13 +231,14 @@
       .info-icon {
         color: #667eea;
         cursor: pointer;
-        font-size: 18px;
-        margin-left: 8px;
-        vertical-align: middle;
+        font-size: 14px;
+        display: block;
+        margin-bottom: 8px;
       }
 
       .info-icon:hover {
         color: #5568d3;
+        text-decoration: underline;
       }
 
       .modal {
@@ -319,17 +334,17 @@
     <div class="container">
       <div class="card">
         <h1>⛽ Ethereum Gas Calculator</h1>
-        <p class="subtitle">
-          Calculate transaction costs in real-time
-          <span
-            class="info-icon"
-            onclick="showExplanation()"
-            title="How is this calculated?"
-            >ℹ️</span
-          >
-        </p>
+        <p class="subtitle">Calculate transaction costs on Ethereum</p>
+        <p class="flow-diagram">Gas → Gwei → ETH → USD</p>
+        <p class="flow-note">Real-time data via Etherscan API</p>
+        <span
+          class="info-icon"
+          onclick="showExplanation()"
+          title="How is this calculated?"
+          >Example</span
+        >
         <a class="api-link hidden" id="changeApiLink" onclick="showApiConfig()"
-          >change api key</a
+          >Change api key</a
         >
       </div>
 
